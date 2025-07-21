@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # Node.js 前端服务
+  part1:
+    build:
+      context: ./part1
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./part1/uploads:/app/uploads
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # Python AI 服务
+  ai_part:
+    build:
+      context: ./ai_part
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - FLASK_ENV=production
+      - PYTHONPATH=/app
+      - SERVER_BASE_URL=http://part1:3000
+    networks:
+      - app-network
+    restart: unless-stopped
+    depends_on:
+      - part1
+
+# 创建自定义网络，让容器之间可以通过服务名互相通信
+networks:
+  app-network:
+    driver: bridge
+
+# 持久化存储卷
+volumes:
+  uploads:
+    driver: local 

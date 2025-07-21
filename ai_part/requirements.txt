@@ -1,0 +1,13 @@
+Flask==2.3.3
+requests==2.31.0
+langchain==0.3.26
+langchain-community==0.3.27
+langchain-core==0.3.69
+langchain-openai==0.3.28
+langchain-text-splitters==0.3.8
+python-dotenv==1.0.0
+unstructured==0.11.8
+pillow==10.0.1
+python-magic==0.4.27
+rarfile==4.1
+py7zr==0.20.6 
