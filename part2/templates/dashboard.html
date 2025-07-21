@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}仪表板 - 员工绩效管理系统{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2>
+            <i class="fas fa-chart-line me-2"></i>仪表板
+            <small class="text-muted">欢迎回来，{{ session.username }}！</small>
+        </h2>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ total_evaluations }}</h4>
+                        <p class="card-text">总评估数量</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clipboard-list fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ total_employees }}</h4>
+                        <p class="card-text">员工总数</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>本季度绩效概览
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="border-end">
+                            <h4 class="text-success">85%</h4>
+                            <small class="text-muted">优秀</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border-end">
+                            <h4 class="text-info">12%</h4>
+                            <small class="text-muted">良好</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border-end">
+                            <h4 class="text-warning">3%</h4>
+                            <small class="text-muted">待改进</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-danger">0%</h4>
+                        <small class="text-muted">不合格</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-tasks me-2"></i>快速操作
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('evaluations') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-clipboard-list me-1"></i>查看评估
+                    </a>
+                    {% if session.role == 'admin' %}
+                    <a href="{{ url_for('admin_templates') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-cog me-1"></i>管理模板
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('profile') }}" class="btn btn-outline-info">
+                        <i class="fas fa-user me-1"></i>个人资料
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bell me-2"></i>系统通知
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>提醒：</strong>Q4季度绩效评估即将开始，请及时完成相关评估工作。
+                </div>
+                {% if session.role == 'admin' %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>管理员通知：</strong>新的模板预览功能已上线，支持高级变量配置。
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

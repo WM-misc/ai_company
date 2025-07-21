@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  # 员工绩效管理系统 - CTF Web题目
+  performance-system:
+    build: .
+    container_name: wmctf_performance_system
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - FLASK_DEBUG=false
+    volumes:
+      # 挂载数据库目录（可选，用于数据持久化）
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M

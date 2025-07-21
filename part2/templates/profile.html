@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}个人资料 - 员工绩效管理系统{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2>
+            <i class="fas fa-user me-2"></i>个人资料
+            <small class="text-muted">查看和编辑您的个人信息</small>
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-user-circle fa-5x text-muted mb-3"></i>
+                <h5>{{ session.username }}</h5>
+                <p class="text-muted">{{ session.department }}</p>
+                <span class="badge bg-primary">{{ session.role }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>账户信息
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-sm-4">
+                        <strong>用户名：</strong>
+                    </div>
+                    <div class="col-sm-8">
+                        {{ session.username }}
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-sm-4">
+                        <strong>角色：</strong>
+                    </div>
+                    <div class="col-sm-8">
+                        <span class="badge bg-primary">{{ session.role }}</span>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-sm-4">
+                        <strong>部门：</strong>
+                    </div>
+                    <div class="col-sm-8">
+                        {{ session.department }}
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-sm-4">
+                        <strong>最后登录：</strong>
+                    </div>
+                    <div class="col-sm-8">
+                        <span class="text-muted">刚刚</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

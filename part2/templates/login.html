@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}登录 - 员工绩效管理系统{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-body p-5">
+                <div class="text-center mb-4">
+                    <i class="fas fa-building fa-3x text-primary mb-3"></i>
+                    <h3 class="card-title">员工绩效管理系统</h3>
+                    <p class="text-muted">请使用您的企业账户登录</p>
+                </div>
+
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">
+                            <i class="fas fa-user me-1"></i>用户名
+                        </label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="password" class="form-label">
+                            <i class="fas fa-lock me-1"></i>密码
+                        </label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100 mb-3">
+                        <i class="fas fa-sign-in-alt me-1"></i>登录
+                    </button>
+                </form>
+
+                <div class="text-center">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        如果您忘记了密码，请联系IT支持部门
+                    </small>
+                </div>
+
+                <!-- 开发环境提示 -->
+                <div class="mt-4 p-3 bg-light rounded">
+                    <h6 class="text-primary mb-2">
+                        <i class="fas fa-users me-1"></i>测试账户
+                    </h6>
+                    <small class="text-muted d-block">管理员: admin / admin@2024</small>
+                    <small class="text-muted d-block">经理: manager1 / manager123</small>
+                    <small class="text-muted d-block">员工: employee1 / emp2024</small>
+                    <small class="text-muted d-block">HR: hr_lead / hr_secure</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

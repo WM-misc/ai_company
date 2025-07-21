@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}帮助文档 - 员工绩效管理系统{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2>
+            <i class="fas fa-question-circle me-2"></i>帮助文档
+            <small class="text-muted">系统使用指南</small>
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">目录</h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li><a href="#getting-started" class="text-decoration-none">
+                        <i class="fas fa-play me-1"></i>快速开始
+                    </a></li>
+                    <li><a href="#evaluations" class="text-decoration-none">
+                        <i class="fas fa-clipboard-list me-1"></i>绩效评估
+                    </a></li>
+                    {% if session.role == 'admin' %}
+                    <li><a href="#templates" class="text-decoration-none">
+                        <i class="fas fa-file-alt me-1"></i>模板管理
+                    </a></li>
+                    {% endif %}
+                    <li><a href="#faq" class="text-decoration-none">
+                        <i class="fas fa-question me-1"></i>常见问题
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-body">
+                <section id="getting-started" class="mb-5">
+                    <h4><i class="fas fa-play me-2"></i>快速开始</h4>
+                    <p>欢迎使用员工绩效管理系统！本系统帮助您管理和跟踪员工绩效评估。</p>
+                    
+                    <h6>主要功能：</h6>
+                    <ul>
+                        <li>查看个人绩效评估</li>
+                        <li>管理评估记录</li>
+                        <li>生成绩效报告</li>
+                        {% if session.role == 'admin' %}
+                        <li>配置评估模板</li>
+                        {% endif %}
+                    </ul>
+                </section>
+
+                <section id="evaluations" class="mb-5">
+                    <h4><i class="fas fa-clipboard-list me-2"></i>绩效评估</h4>
+                    <p>绩效评估是系统的核心功能，支持多维度的员工能力评估。</p>
+                    
+                    <h6>评估流程：</h6>
+                    <ol>
+                        <li>创建评估记录</li>
+                        <li>填写评估内容</li>
+                        <li>提交评估结果</li>
+                        <li>生成评估报告</li>
+                    </ol>
+                </section>
+
+                {% if session.role == 'admin' %}
+                <section id="templates" class="mb-5">
+                    <h4><i class="fas fa-file-alt me-2"></i>模板管理</h4>
+                    <p>管理员可以配置评估模板，支持灵活的变量配置功能。</p>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>高级功能：</strong>系统支持复杂的变量配置，
+                        包括序列化对象，适用于高级用户。
+                    </div>
+                    
+                    <h6>模板变量语法：</h6>
+                    <ul>
+                        <li>标准变量：<code>{"key": "value"}</code></li>
+                        <li>序列化变量：<code>pickle:&lt;encoded_data&gt;</code></li>
+                    </ul>
+                </section>
+                {% endif %}
+
+                <section id="faq" class="mb-5">
+                    <h4><i class="fas fa-question me-2"></i>常见问题</h4>
+                    
+                    <div class="accordion" id="faqAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="faq1">
+                                <button class="accordion-button collapsed" type="button" 
+                                        data-bs-toggle="collapse" data-bs-target="#collapse1">
+                                    如何重置密码？
+                                </button>
+                            </h2>
+                            <div id="collapse1" class="accordion-collapse collapse">
+                                <div class="accordion-body">
+                                    请联系系统管理员或IT支持部门重置您的密码。
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="faq2">
+                                <button class="accordion-button collapsed" type="button" 
+                                        data-bs-toggle="collapse" data-bs-target="#collapse2">
+                                    评估记录可以修改吗？
+                                </button>
+                            </h2>
+                            <div id="collapse2" class="accordion-collapse collapse">
+                                <div class="accordion-body">
+                                    草稿状态的评估可以修改，已提交的评估需要管理员权限才能修改。
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}编辑模板 - 员工绩效管理系统{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{{ url_for('admin_templates') }}">模板管理</a>
+                </li>
+                <li class="breadcrumb-item active">编辑模板</li>
+            </ol>
+        </nav>
+        <h2>
+            <i class="fas fa-edit me-2"></i>编辑模板
+            <small class="text-muted">{{ template.name }}</small>
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-edit me-2"></i>模板信息
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="templateForm">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">
+                            <i class="fas fa-tag me-1"></i>模板名称
+                        </label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               value="{{ template.name }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="content" class="form-label">
+                            <i class="fas fa-file-alt me-1"></i>模板内容
+                        </label>
+                        <textarea class="form-control" id="content" name="content" rows="8" required>{{ template.content }}</textarea>
+                        <div class="form-text">
+                            使用双大括号语法定义变量，例如：{{employee_name}}、{{quarter}}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="variables" class="form-label">
+                            <i class="fas fa-cogs me-1"></i>变量配置
+                            <span class="badge bg-warning ms-1">高级功能</span>
+                        </label>
+                        <textarea class="form-control" id="variables" name="variables" rows="6">{{ template.variables }}</textarea>
+                        <div class="form-text">
+                            <strong>支持的格式：</strong><br>
+                            • 标准JSON格式：<code>{"key": "value"}</code><br>
+                            • 高级序列化格式：<code>pickle:&lt;base64编码的数据&gt;</code> 
+                            <span class="text-warning">(用于复杂对象配置)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>保存更改
+                        </button>
+                        <button type="button" class="btn btn-outline-info" onclick="previewTemplate()">
+                            <i class="fas fa-eye me-1"></i>预览效果
+                        </button>
+                        <a href="{{ url_for('admin_templates') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>返回
+                        </a>
+                        <button type="button" class="btn btn-outline-danger" onclick="deleteTemplate({{ template.id }})">
+                            <i class="fas fa-trash me-1"></i>删除模板
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>编辑提示
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6>模板变量语法：</h6>
+                <ul class="small">
+                    <li>使用 <code>{{变量名}}</code> 定义变量</li>
+                    <li>变量名只能包含字母、数字和下划线</li>
+                    <li>变量配置支持JSON格式</li>
+                </ul>
+                
+                <h6 class="mt-3">高级功能：</h6>
+                <div class="alert alert-warning small">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    序列化变量配置功能适用于复杂的数据结构，
+                    请确保数据来源可信。
+                </div>
+                
+                <h6 class="mt-3">模板ID: {{ template.id }}</h6>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-eye me-2"></i>实时预览
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="livePreview" class="bg-light p-3 rounded">
+                    <small class="text-muted">修改模板内容后将显示预览</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 预览模态框 -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye me-2"></i>模板预览
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="previewResult">
+                    <!-- 预览内容将在这里显示 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 实时预览功能
+document.getElementById('content').addEventListener('input', function() {
+    const content = this.value;
+    const preview = document.getElementById('livePreview');
+    
+    if (content.trim()) {
+        // 简单的变量替换演示
+        let previewContent = content;
+        previewContent = previewContent.replace(/\{\{(\w+)\}\}/g, '<span class="text-primary">[$1]</span>');
+        preview.innerHTML = previewContent || '<small class="text-muted">预览内容</small>';
+    } else {
+        preview.innerHTML = '<small class="text-muted">修改模板内容后将显示预览</small>';
+    }
+});
+
+// 页面加载时触发一次预览
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('content').dispatchEvent(new Event('input'));
+});
+
+// 高级预览功能 - 这里也是漏洞触发点
+function previewTemplate() {
+    const content = document.getElementById('content').value;
+    const variables = document.getElementById('variables').value || '{}';
+    
+    if (!content.trim()) {
+        alert('请先输入模板内容');
+        return;
+    }
+    
+    // 发送预览请求到后端 - 关键的漏洞触发点
+    fetch('/admin/templates/preview', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            content: content,
+            variables: variables
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+        const previewResult = document.getElementById('previewResult');
+        
+        if (data.success) {
+            previewResult.innerHTML = `
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i>预览生成成功
+                </div>
+                <div class="bg-light p-3 rounded">
+                    <h6>渲染结果：</h6>
+                    <pre>${data.rendered_content}</pre>
+                </div>
+            `;
+        } else {
+            previewResult.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    预览失败：${data.error}
+                </div>
+            `;
+        }
+        
+        modal.show();
+    })
+    .catch(error => {
+        console.error('预览请求失败:', error);
+        alert('预览请求失败，请稍后重试');
+    });
+}
+
+// 删除模板功能
+function deleteTemplate(templateId) {
+    if (confirm('确定要删除这个模板吗？此操作不可撤销。')) {
+        fetch(`/admin/templates/${templateId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('模板删除成功');
+                window.location.href = '/admin/templates';
+            } else {
+                alert('删除失败：' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('删除请求失败:', error);
+            alert('删除请求失败，请稍后重试');
+        });
+    }
+}
+</script>
+{% endblock %} 

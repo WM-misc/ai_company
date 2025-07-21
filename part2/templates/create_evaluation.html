@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}新建评估 - 员工绩效管理系统{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{{ url_for('evaluations') }}">绩效评估</a>
+                </li>
+                <li class="breadcrumb-item active">新建评估</li>
+            </ol>
+        </nav>
+        <h2>
+            <i class="fas fa-plus me-2"></i>新建评估
+            <small class="text-muted">创建员工绩效评估</small>
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clipboard-list me-2"></i>评估信息
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="employee_id" class="form-label">
+                                    <i class="fas fa-user me-1"></i>评估员工 <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="employee_id" name="employee_id" required>
+                                    <option value="">请选择员工</option>
+                                    {% for employee in employees %}
+                                    <option value="{{ employee[0] }}">{{ employee[1] }} ({{ employee[2] }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="quarter" class="form-label">
+                                    <i class="fas fa-calendar me-1"></i>评估周期 <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="quarter" name="quarter" required>
+                                    <option value="">请选择评估周期</option>
+                                    <option value="Q1-2024">Q1-2024</option>
+                                    <option value="Q2-2024">Q2-2024</option>
+                                    <option value="Q3-2024">Q3-2024</option>
+                                    <option value="Q4-2024" selected>Q4-2024</option>
+                                    <option value="Q1-2025">Q1-2025</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="scores" class="form-label">
+                            <i class="fas fa-star me-1"></i>评分详情
+                        </label>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label class="form-label small">工作质量</label>
+                                <select class="form-select form-select-sm" name="work_quality">
+                                    <option value="90">优秀 (90分)</option>
+                                    <option value="80" selected>良好 (80分)</option>
+                                    <option value="70">及格 (70分)</option>
+                                    <option value="60">待改进 (60分)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">团队协作</label>
+                                <select class="form-select form-select-sm" name="teamwork">
+                                    <option value="90">优秀 (90分)</option>
+                                    <option value="80" selected>良好 (80分)</option>
+                                    <option value="70">及格 (70分)</option>
+                                    <option value="60">待改进 (60分)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">创新能力</label>
+                                <select class="form-select form-select-sm" name="innovation">
+                                    <option value="90">优秀 (90分)</option>
+                                    <option value="80" selected>良好 (80分)</option>
+                                    <option value="70">及格 (70分)</option>
+                                    <option value="60">待改进 (60分)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">目标达成</label>
+                                <select class="form-select form-select-sm" name="goal_achievement">
+                                    <option value="90">优秀 (90分)</option>
+                                    <option value="80" selected>良好 (80分)</option>
+                                    <option value="70">及格 (70分)</option>
+                                    <option value="60">待改进 (60分)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-text">系统将自动计算综合评分</div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="comments" class="form-label">
+                            <i class="fas fa-comment me-1"></i>评估意见
+                        </label>
+                        <textarea class="form-control" id="comments" name="comments" rows="6" 
+                                  placeholder="请详细描述员工的工作表现、优点、需要改进的地方以及建议..."></textarea>
+                        <div class="form-text">建议包含具体的工作表现、成就和改进建议</div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>保存为草稿
+                        </button>
+                        <button type="button" class="btn btn-success" onclick="submitEvaluation('completed')">
+                            <i class="fas fa-check me-1"></i>完成评估
+                        </button>
+                        <a href="{{ url_for('evaluations') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>返回
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>评估指南
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6>评分标准：</h6>
+                <ul class="small">
+                    <li><strong>优秀 (90分)</strong>：超出期望，表现卓越</li>
+                    <li><strong>良好 (80分)</strong>：达到期望，表现良好</li>
+                    <li><strong>及格 (70分)</strong>：基本达标，有改进空间</li>
+                    <li><strong>待改进 (60分)</strong>：未达标，需要改进</li>
+                </ul>
+                
+                <h6 class="mt-3">评估维度：</h6>
+                <ul class="small">
+                    <li><strong>工作质量</strong>：工作成果的质量和准确性</li>
+                    <li><strong>团队协作</strong>：与同事的协作和沟通能力</li>
+                    <li><strong>创新能力</strong>：创新思维和解决问题的能力</li>
+                    <li><strong>目标达成</strong>：完成工作目标的情况</li>
+                </ul>
+                
+                <div class="alert alert-info small mt-3">
+                    <i class="fas fa-lightbulb me-1"></i>
+                    <strong>提示：</strong>评估意见应客观、具体，帮助员工了解自己的表现和改进方向。
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calculator me-2"></i>综合评分
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <h3 id="totalScore" class="text-primary">80</h3>
+                    <p class="text-muted mb-0">综合得分</p>
+                    <small id="scoreLevel" class="text-success">良好</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 计算综合评分
+function calculateTotalScore() {
+    const scores = {
+        work_quality: parseInt(document.querySelector('[name="work_quality"]').value) || 80,
+        teamwork: parseInt(document.querySelector('[name="teamwork"]').value) || 80,
+        innovation: parseInt(document.querySelector('[name="innovation"]').value) || 80,
+        goal_achievement: parseInt(document.querySelector('[name="goal_achievement"]').value) || 80
+    };
+    
+    // 计算平均分
+    const total = (scores.work_quality + scores.teamwork + scores.innovation + scores.goal_achievement) / 4;
+    
+    // 更新显示
+    document.getElementById('totalScore').textContent = total.toFixed(0);
+    
+    // 更新等级
+    let level = '';
+    let levelClass = '';
+    if (total >= 90) {
+        level = '优秀';
+        levelClass = 'text-success';
+    } else if (total >= 80) {
+        level = '良好';
+        levelClass = 'text-info';
+    } else if (total >= 70) {
+        level = '及格';
+        levelClass = 'text-warning';
+    } else {
+        level = '待改进';
+        levelClass = 'text-danger';
+    }
+    
+    const scoreElement = document.getElementById('scoreLevel');
+    scoreElement.textContent = level;
+    scoreElement.className = levelClass;
+    
+    return scores;
+}
+
+// 绑定评分变化事件
+document.addEventListener('DOMContentLoaded', function() {
+    const scoreSelects = document.querySelectorAll('[name="work_quality"], [name="teamwork"], [name="innovation"], [name="goal_achievement"]');
+    scoreSelects.forEach(select => {
+        select.addEventListener('change', calculateTotalScore);
+    });
+    
+    // 初始计算
+    calculateTotalScore();
+});
+
+// 提交为完成状态
+function submitEvaluation(status) {
+    const form = document.querySelector('form');
+    
+    // 添加隐藏字段表示状态
+    const statusInput = document.createElement('input');
+    statusInput.type = 'hidden';
+    statusInput.name = 'status';
+    statusInput.value = status;
+    form.appendChild(statusInput);
+    
+    // 添加评分数据
+    const scores = calculateTotalScore();
+    const scoresInput = document.createElement('input');
+    scoresInput.type = 'hidden';
+    scoresInput.name = 'scores';
+    scoresInput.value = JSON.stringify(scores);
+    form.appendChild(scoresInput);
+    
+    form.submit();
+}
+</script>
+{% endblock %} 

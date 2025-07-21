@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客服工作台 - 智能商城</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            text-align: center;
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-header p {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+
+        .conversation-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .conversation-item {
+            padding: 1rem;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .conversation-item:hover {
+            background: #f8f9fa;
+        }
+
+        .conversation-item.active {
+            background: #e3f2fd;
+            border-left: 4px solid #667eea;
+        }
+
+        .conversation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .user-id {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .message-count {
+            background: #667eea;
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.8rem;
+        }
+
+        .last-message {
+            color: #666;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .last-time {
+            color: #999;
+            font-size: 0.8rem;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            background: white;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chat-info h2 {
+            color: #333;
+            margin-bottom: 0.2rem;
+        }
+
+        .chat-status {
+            color: #28a745;
+            font-size: 0.9rem;
+        }
+
+        .back-btn {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            text-decoration: none;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .message.customer {
+            flex-direction: row;
+        }
+
+        .message.service {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            flex-shrink: 0;
+            font-size: 0.9rem;
+        }
+
+        .message.customer .message-avatar {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+        }
+
+        .message.service .message-avatar {
+            background: linear-gradient(45deg, #28a745, #20c997);
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 0.8rem 1rem;
+            border-radius: 18px;
+            word-wrap: break-word;
+        }
+
+        .message.customer .message-content {
+            background: white;
+            color: #333;
+            border: 1px solid #e9ecef;
+            border-bottom-left-radius: 5px;
+        }
+
+        .message.service .message-content {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message-time {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-top: 0.3rem;
+        }
+
+        .message.customer .message-time {
+            text-align: left;
+        }
+
+        .message.service .message-time {
+            text-align: right;
+        }
+
+        .file-message {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-top: 0.5rem;
+        }
+
+        .file-message a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .file-message img {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 10px;
+        }
+
+        .chat-input {
+            padding: 1rem;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-end;
+        }
+
+        .input-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .message-input {
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            padding: 0.8rem 1rem;
+            font-size: 1rem;
+            resize: none;
+            outline: none;
+            transition: border-color 0.3s;
+            min-height: 50px;
+            max-height: 120px;
+        }
+
+        .message-input:focus {
+            border-color: #667eea;
+        }
+
+        .file-upload {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-btn {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .send-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.3s;
+            font-size: 1.2rem;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .no-conversation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .no-conversation-content {
+            text-align: center;
+        }
+
+        .no-conversation-content h3 {
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 250px;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>客服工作台</h1>
+            <p>在线客服系统</p>
+        </div>
+        <div class="conversation-list" id="conversationList">
+            <!-- 对话列表将通过JavaScript动态加载 -->
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="chat-header" id="chatHeader" style="display: none;">
+            <div class="chat-info">
+                <h2 id="currentUserId">用户ID</h2>
+                <div class="chat-status">在线</div>
+            </div>
+            <a href="/" class="back-btn">返回首页</a>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="no-conversation">
+                <div class="no-conversation-content">
+                    <h3>👋 欢迎使用客服工作台</h3>
+                    <p>请从左侧选择要处理的对话</p>
+                    <button class="refresh-btn" onclick="loadConversations()">刷新对话列表</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-input" id="chatInput" style="display: none;">
+            <div class="input-container">
+                <textarea 
+                    id="messageInput" 
+                    class="message-input" 
+                    placeholder="请输入回复消息..."
+                    rows="1"
+                ></textarea>
+                <div class="file-upload">
+                    <label for="fileInput" class="file-btn" title="上传文件">
+                        📎
+                    </label>
+                    <input type="file" id="fileInput" class="file-input" accept="image/*,.pdf,.doc,.docx,.txt">
+                </div>
+            </div>
+            <button id="sendBtn" class="send-btn" disabled>➤</button>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const conversationList = document.getElementById('conversationList');
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const fileInput = document.getElementById('fileInput');
+        const chatHeader = document.getElementById('chatHeader');
+        const chatInput = document.getElementById('chatInput');
+        const currentUserIdElement = document.getElementById('currentUserId');
+
+        let currentUserId = null;
+        let conversations = [];
+
+        // 加入客服聊天
+        socket.emit('join-chat', { userId: 'service', userType: 'service' });
+
+        // 加载对话列表
+        async function loadConversations() {
+            try {
+                const response = await fetch('/api/service/conversations');
+                conversations = await response.json();
+                displayConversations();
+            } catch (error) {
+                console.error('加载对话列表失败:', error);
+            }
+        }
+
+        // 显示对话列表
+        function displayConversations() {
+            conversationList.innerHTML = '';
+
+            if (conversations.length === 0) {
+                conversationList.innerHTML = '<div style="padding: 1rem; text-align: center; color: #666;">暂无对话</div>';
+                return;
+            }
+
+            conversations.forEach(conv => {
+                const convItem = document.createElement('div');
+                convItem.className = 'conversation-item';
+                if (conv.userId === currentUserId) {
+                    convItem.classList.add('active');
+                }
+
+                const lastMessage = conv.lastMessage || { message: '暂无消息', timestamp: new Date().toISOString() };
+                const time = new Date(lastMessage.timestamp).toLocaleTimeString();
+
+                convItem.innerHTML = `
+                    <div class="conversation-header">
+                        <span class="user-id">${conv.userId}</span>
+                        <span class="message-count">${conv.messageCount}</span>
+                    </div>
+                    <div class="last-message">${lastMessage.message}</div>
+                    <div class="last-time">${time}</div>
+                `;
+
+                convItem.addEventListener('click', () => {
+                    selectConversation(conv.userId);
+                });
+
+                conversationList.appendChild(convItem);
+            });
+        }
+
+        // 选择对话
+        async function selectConversation(userId) {
+            currentUserId = userId;
+            currentUserIdElement.textContent = userId;
+            
+            // 更新UI
+            chatHeader.style.display = 'flex';
+            chatInput.style.display = 'flex';
+            
+            // 移除欢迎信息
+            const noConversation = chatMessages.querySelector('.no-conversation');
+            if (noConversation) {
+                noConversation.remove();
+            }
+
+            // 加载对话记录
+            await loadConversationHistory(userId);
+            
+            // 更新对话列表选中状态
+            document.querySelectorAll('.conversation-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.closest('.conversation-item').classList.add('active');
+        }
+
+        // 加载对话历史
+        async function loadConversationHistory(userId) {
+            try {
+                const response = await fetch(`/api/conversations/${userId}`);
+                const messages = await response.json();
+                displayMessages(messages);
+            } catch (error) {
+                console.error('加载对话历史失败:', error);
+            }
+        }
+
+        // 显示消息
+        function displayMessages(messages) {
+            chatMessages.innerHTML = '';
+            
+            if (messages.length === 0) {
+                chatMessages.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">暂无消息</div>';
+                return;
+            }
+
+            messages.forEach(message => {
+                addMessageToDisplay(message);
+            });
+        }
+
+        // 添加消息到显示
+        function addMessageToDisplay(messageObj) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${messageObj.userType}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = messageObj.userType === 'customer' ? '👤' : '🤖';
+
+            const content = document.createElement('div');
+            content.className = 'message-content';
+
+            if (messageObj.type === 'image' && messageObj.fileUrl) {
+                const img = document.createElement('img');
+                img.src = messageObj.fileUrl;
+                img.alt = '图片';
+                content.appendChild(img);
+            } else if (messageObj.type === 'file' && messageObj.fileUrl) {
+                const fileLink = document.createElement('div');
+                fileLink.className = 'file-message';
+                fileLink.innerHTML = `
+                    <span>📎</span>
+                    <a href="${messageObj.fileUrl}" target="_blank">${messageObj.message}</a>
+                `;
+                content.appendChild(fileLink);
+            } else {
+                content.textContent = messageObj.message;
+            }
+
+            const time = document.createElement('div');
+            time.className = 'message-time';
+            time.textContent = new Date(messageObj.timestamp).toLocaleTimeString();
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(content);
+            messageDiv.appendChild(time);
+
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // 自动调整输入框高度
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            sendBtn.disabled = !this.value.trim();
+        });
+
+        // 发送消息
+        async function sendMessage(message, type = 'text', fileUrl = null) {
+            if (!currentUserId || (!message.trim() && !fileUrl)) return;
+
+            try {
+                const response = await fetch('/api/service/reply', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId: currentUserId,
+                        message: message.trim(),
+                        type,
+                        fileUrl
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    messageInput.value = '';
+                    messageInput.style.height = 'auto';
+                    sendBtn.disabled = true;
+                    
+                    // 重新加载对话列表
+                    await loadConversations();
+                }
+            } catch (error) {
+                console.error('发送消息失败:', error);
+                alert('发送消息失败，请重试');
+            }
+        }
+
+        // 发送按钮点击
+        sendBtn.addEventListener('click', () => {
+            sendMessage(messageInput.value);
+        });
+
+        // 回车发送
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage(messageInput.value);
+            }
+        });
+
+        // 文件上传
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    const fileType = file.type.startsWith('image/') ? 'image' : 'file';
+                    sendMessage(file.name, fileType, result.fileUrl);
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                console.error('文件上传失败:', error);
+                alert('文件上传失败，请重试');
+            }
+
+            fileInput.value = '';
+        });
+
+        // 接收新消息
+        socket.on('new-message', (messageObj) => {
+            // 如果是当前对话的消息，直接显示
+            if (messageObj.userId === currentUserId || 
+                (messageObj.userType === 'service' && currentUserId)) {
+                addMessageToDisplay(messageObj);
+            }
+            
+            // 重新加载对话列表
+            loadConversations();
+        });
+
+        // 连接状态
+        socket.on('connect', () => {
+            console.log('已连接到服务器');
+            loadConversations();
+        });
+
+        socket.on('disconnect', () => {
+            console.log('与服务器断开连接');
+        });
+
+        // 定期刷新对话列表
+        setInterval(loadConversations, 10000);
+    </script>
+</body>
+</html> 
