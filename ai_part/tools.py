@@ -140,7 +140,7 @@ def is_executable_binary(file_path: Path) -> bool:
         with open(file_path, 'rb') as f:
             header = f.read(4)
             # 检查常见的可执行文件头
-            return header in {b'\x7fELF', b'MZ\x90\x00', b'PK\x03\x04'}
+            return header in {b'\x7fELF', b'MZ\x90\x00', b'PK\x03\x04',b'\xca\xfe\xba\xbe',b'\xcf\xfa\xed\xfe'}
     except Exception as e:
         print(f"检查可执行文件失败: {e}")
         return False
@@ -400,12 +400,12 @@ AVAILABLE_TOOLS = [
 
 if __name__ == "__main__":
     # 测试视觉模型图片分析功能
-    test_url = "http://localhost:3000/uploads/test_image.png"
-    print(f"测试视觉模型图片分析: {test_url}")
-    result = analyze_image_content(test_url)
-    print("=" * 50)
-    print(result)
-    print("=" * 50)
+    # test_url = "http://localhost:3000/uploads/test_image.png"
+    # print(f"测试视觉模型图片分析: {test_url}")
+    # result = analyze_image_content(test_url)
+    # print("=" * 50)
+    # print(result)
+    # print("=" * 50)
     
     # 测试压缩包分析工具
     test_archive_url = "http://localhost:3000/uploads/test_archive.zip"

@@ -33,6 +33,31 @@ services:
     restart: unless-stopped
     depends_on:
       - part1
+  # WebUI 服务
+  webui_part:
+    build:
+      context: ./webui_part
+      dockerfile: Dockerfile
+    container_name: open-webui1
+    ports:
+      - "3002:8080"
+    volumes:
+      - ./webui_part:/app/backend/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - app-network
+    restart: always
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    networks:
+      - app-network
+    restart: unless-stopped
+
 
 # 创建自定义网络，让容器之间可以通过服务名互相通信
 networks:

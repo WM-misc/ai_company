@@ -1,31 +1,63 @@
-/* 员工绩效管理系统自定义样式 */
-
-:root {
-    --primary-color: #0d6efd;
-    --secondary-color: #6c757d;
-    --success-color: #198754;
-    --warning-color: #ffc107;
-    --danger-color: #dc3545;
-    --info-color: #0dcaf0;
+/* 自定义样式 */
+.bg-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f8f9fa;
-}
-
-.navbar-brand {
-    font-weight: 600;
+.hero-section {
+    border-radius: 15px;
 }
 
 .card {
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    border: 1px solid rgba(0, 0, 0, 0.125);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
-.card-header {
-    background-color: rgba(0, 0, 0, 0.03);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.timeline {
+    position: relative;
+}
+
+.timeline-item {
+    padding: 10px 0;
+    border-left: 2px solid #e9ecef;
+    padding-left: 15px;
+    margin-left: 10px;
+}
+
+.timeline-item:before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 15px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #007bff;
+}
+
+.navbar-brand {
+    font-weight: bold;
+}
+
+.btn {
+    border-radius: 8px;
+}
+
+.form-control {
+    border-radius: 8px;
+}
+
+.card {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.badge {
+    font-size: 0.75em;
 }
 
 .table th {
@@ -34,76 +66,189 @@ body {
     color: #495057;
 }
 
-.badge {
-    font-size: 0.75em;
-}
-
-.btn {
-    font-weight: 500;
-}
-
-.alert {
+.modal-content {
+    border-radius: 12px;
     border: none;
-    border-radius: 0.5rem;
 }
 
-.spinner-border {
-    width: 2rem;
-    height: 2rem;
+/* 代码块样式 */
+pre {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    max-height: 400px;
+    overflow-y: auto;
 }
 
-/* 登录页面样式 */
-.login-container {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
+code {
+    color: #e83e8c;
+    font-size: 0.9em;
 }
 
-/* 模板编辑器样式 */
-.template-editor {
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-}
-
-.live-preview {
-    border: 1px dashed #dee2e6;
-    min-height: 100px;
-}
-
-/* 响应式调整 */
+/* 响应式优化 */
 @media (max-width: 768px) {
-    .navbar-brand {
-        font-size: 1rem;
+    .hero-section h1 {
+        font-size: 2rem;
     }
     
     .card-body {
         padding: 1rem;
     }
+    
+    .timeline-item {
+        margin-left: 0;
+        border-left: none;
+        padding-left: 0;
+    }
+    
+    .timeline-item:before {
+        display: none;
+    }
 }
 
-/* 动画效果 */
-.fade-in {
-    animation: fadeIn 0.3s ease-in;
+/* 加载动画 */
+.spinner-border {
+    color: #007bff;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+/* 自定义按钮样式 */
+.btn-outline-primary:hover {
+    background-color: #007bff;
+    border-color: #007bff;
 }
 
-/* 自定义滚动条 */
-::-webkit-scrollbar {
+/* 表单验证样式 */
+.is-invalid {
+    border-color: #dc3545;
+}
+
+.invalid-feedback {
+    display: block;
+    color: #dc3545;
+}
+
+/* 成功消息样式 */
+.alert {
+    border-radius: 8px;
+    border: none;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+/* 文件上传区域 */
+.file-upload-area {
+    border: 2px dashed #ced4da;
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
+    transition: border-color 0.2s ease-in-out;
+}
+
+.file-upload-area:hover {
+    border-color: #007bff;
+}
+
+.file-upload-area.dragover {
+    border-color: #007bff;
+    background-color: #f8f9fa;
+}
+
+/* 导航栏优化 */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.dropdown-menu {
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* 页脚样式 */
+footer {
+    margin-top: auto;
+}
+
+/* 统计卡片动画 */
+.stats-card {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    border-radius: 12px;
+}
+
+.stats-card:hover {
+    transform: scale(1.02);
+}
+
+/* 数据表格样式 */
+.table-responsive {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+}
+
+/* 模态框优化 */
+.modal-header {
+    border-bottom: 1px solid #e9ecef;
+}
+
+.modal-footer {
+    border-top: 1px solid #e9ecef;
+}
+
+/* 系统状态指示器 */
+.status-indicator {
+    display: inline-block;
     width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
 }
 
-::-webkit-scrollbar-track {
-    background: #f1f1f1;
+.status-online {
+    background-color: #28a745;
+    animation: pulse 2s infinite;
 }
 
-::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 4px;
+.status-offline {
+    background-color: #dc3545;
 }
 
-::-webkit-scrollbar-thumb:hover {
-    background: #a1a1a1;
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+    }
 } 

