@@ -175,7 +175,7 @@ function handleCustomerMessageWithDebounce(userId, messageObj) {
 
 // 发送包含上下文的Webhook到AI服务
 async function sendWebhookToAIWithContext(userId) {
-  const webhookUrl = process.env.AI_WEBHOOK_URL || 'http://localhost:3001/ai-webhook';
+  const webhookUrl = process.env.AI_WEBHOOK_URL || 'http://ai_part:3001/ai-webhook';
   
   try {
     // 标记AI正在处理

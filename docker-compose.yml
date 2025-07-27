@@ -1,70 +1,142 @@
 version: '3.8'
 
 services:
-  # Node.js 前端服务
+  # Node.js 前端服务 - 唯一外网入口
   part1:
     build:
       context: ./part1
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "3000:3000"  # 唯一对外暴露的端口
     volumes:
       - ./part1/uploads:/app/uploads
     environment:
       - NODE_ENV=production
       - PORT=3000
     networks:
-      - app-network
+      production-network:
+        ipv4_address: 172.20.0.10
     restart: unless-stopped
 
-  # Python AI 服务
+  # Python AI 服务 - 办公网中间层，连接生产网和内网
   ai_part:
     build:
       context: ./ai_part
       dockerfile: Dockerfile
-    ports:
-      - "3001:3001"
+    # 不对外暴露端口，只能通过内部网络访问
     environment:
       - FLASK_ENV=production
       - PYTHONPATH=/app
-      - SERVER_BASE_URL=http://part1:3000
+      - SERVER_BASE_URL=http://172.20.0.10:3000
     networks:
-      - app-network
+      production-network:
+        ipv4_address: 172.20.0.20
+      office-network:
+        ipv4_address: 192.168.100.10
     restart: unless-stopped
     depends_on:
       - part1
-  # WebUI 服务
+
+  # WebUI 服务 - 公司内网
   webui_part:
     build:
       context: ./webui_part
       dockerfile: Dockerfile
     container_name: open-webui1
-    ports:
-      - "3002:8080"
+    # 不对外暴露端口
     volumes:
-      - ./webui_part:/app/backend/data
+      - ./webui_part/data:/app/backend/data
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
-      - app-network
+      internal-network:
+        ipv4_address: 10.0.1.10
+      office-network:
+        ipv4_address: 192.168.100.40
     restart: always
 
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
-    ports:
-      - "11434:11434"
-    networks:
-      - app-network
+  # Redis - 公司内网
+  redis:
+    image: redis:7-alpine
+    container_name: office_redis
     restart: unless-stopped
+    # 不对外暴露端口
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      internal-network:
+        ipv4_address: 10.0.1.20
+      office-network:
+        ipv4_address: 192.168.100.20
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # 主应用服务 - 公司内网
+  part2:
+    build: ./part2
+    container_name: office_app
+    restart: unless-stopped
+    # 不对外暴露端口
+    environment:
+      - GIN_MODE=release
+      - PORT=8080
+      - REDIS_ADDR=10.0.1.20:6379
+    volumes:
+      - ./part2/uploads:/app/uploads  # 修正挂载路径
+      - ./part2/flag.txt:/flag.txt:ro  # 修正flag文件路径
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      internal-network:
+        ipv4_address: 10.0.1.30
+      office-network:
+        ipv4_address: 192.168.100.30
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 
-# 创建自定义网络，让容器之间可以通过服务名互相通信
+
+
+# 创建分层网络架构
 networks:
-  app-network:
+  # 生产网 - part1 和 ai_part 之间通信 (172.20.0.0/24)
+  production-network:
     driver: bridge
+    internal: false  # 允许访问外网
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+          gateway: 172.20.0.1
+  
+  # 办公网 - ai_part 访问内网服务的桥梁 (192.168.100.0/24)
+  office-network:
+    driver: bridge
+    internal: false  # 允许访问外网
+    ipam:
+      config:
+        - subnet: 192.168.100.0/24
+          gateway: 192.168.100.1
+  
+  # 公司内网 - part2, redis, webui_part 之间通信 (10.0.1.0/24)
+  internal-network:
+    driver: bridge
+    internal: false  # 允许访问外网（用于软件更新等）
+    ipam:
+      config:
+        - subnet: 10.0.1.0/24
+          gateway: 10.0.1.1
 
 # 持久化存储卷
 volumes:
   uploads:
+    driver: local
+  redis_data:
     driver: local 
